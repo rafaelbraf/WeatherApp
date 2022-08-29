@@ -67,15 +67,11 @@ class MainActivity : AppCompatActivity() {
                     val inflater: LayoutInflater = LayoutInflater.from(this@MainActivity)
                     if (forecast != null) {
                         for (index in forecast) {
-
                             val view: View = inflater.inflate(R.layout.layout_forecast, layoutForecast, false)
                             view.textView_dia_semana.text = index.weekday
                             val minima = index.min
                             val maxima = index.max
-                            var temperaturaMedia: Int = 0
-                            if (maxima != null && minima != null) {
-                                temperaturaMedia = calculaTemperaturaMedia(minima, maxima)
-                            }
+                            var temperaturaMedia: Int = index.calculaTemperaturaMedia(minima, maxima)
                             view.textView_temperatura_media.text = "${temperaturaMedia.toString()}º"
                             layoutForecast.addView(view)
                         }
@@ -93,58 +89,16 @@ class MainActivity : AppCompatActivity() {
 
     fun alteraImagemConformeTempoAtual(tempoAtual: String, tempoDescricao: String): Int {
         var idDrawable: Int = 0
-        if(tempoAtual == "dia" && textView_descricao.text.contains("nublado")) {
+        if(tempoAtual == "dia" && tempoDescricao.contains("nublado")) {
             idDrawable = R.drawable.dia_nublado
-        } else if (tempoAtual == "noite" && !textView_descricao.text.contains("nublado") && !textView_descricao.text.contains("Neblina")) {
+        } else if (tempoAtual == "noite" && !tempoDescricao.contains("nublado") && !tempoDescricao.contains("Neblina")) {
             idDrawable = R.drawable.noite
-        } else if (tempoAtual == "noite" && textView_descricao.text == "Neblina") {
+        } else if (tempoAtual == "noite" && tempoDescricao == "Neblina") {
+            idDrawable = R.drawable.noite_nublada
+        } else if (tempoAtual == "noite" && tempoDescricao.contains("nublado")) {
             idDrawable = R.drawable.noite_nublada
         }
         return idDrawable
-    }
-
-    fun calculaTemperaturaMedia(temperaturaMinima: Int, temperaturaMaxima: Int): Int = (temperaturaMinima + temperaturaMaxima) / 2
-
-    fun getCidade(cidade: String) {
-
-        val client = OkHttpClient()
-
-        try {
-
-            val url = "https://api.hgbrasil.com/weather?key=5caee7bd&city_name=$cidade"
-
-            val request = Request.Builder().url(url).build()
-
-            client.newCall(request).enqueue(object : Callback{
-                override fun onFailure(call: Call, e: IOException) {}
-                override fun onResponse(call: Call, response: Response) {
-                    createThread(response)
-                }
-            })
-
-        } catch (err: Error) {
-            println("Erro na requisição ${err.localizedMessage}")
-        }
-
-    }
-
-    fun createThread(response: Response) {
-        val thread = Thread(
-            Runnable {
-                runOnUiThread {
-                    var data = mutableListOf<String>()
-                    response.body?.string()?.forEach {
-                        if(it != null) data.add(it.toString())
-                    }
-
-                    response.body?.string()
-
-                    val descricao = data.indexOf("valid_key")
-                    println("descricao $descricao")
-                }
-            }
-        )
-        thread.start()
     }
 
 }

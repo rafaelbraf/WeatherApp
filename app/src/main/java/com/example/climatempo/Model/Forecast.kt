@@ -11,4 +11,14 @@ data class Forecast(
     @SerializedName("description" ) var description : String? = null,
     @SerializedName("condition"   ) var condition   : String? = null
 
-)
+) {
+
+    fun calculaTemperaturaMedia(max: Int?, min: Int?): Int {
+        var temperaturaMedia: Int = 0
+        if (max != null && min != null) {
+            temperaturaMedia = (max + min) / 2
+        }
+        return temperaturaMedia
+    }
+
+}
