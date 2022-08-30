@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import com.example.climatempo.Model.Forecast
 import com.example.climatempo.Model.Results
@@ -47,31 +48,25 @@ class MainActivity : AppCompatActivity() {
                 response: retrofit2.Response<WeatherMain>
             ) {
                 if (response.isSuccessful) {
+
                     val resultadoWeatherMain: WeatherMain? = response.body()
                     val results: Results? = resultadoWeatherMain?.results
                     val forecast: ArrayList<Forecast>? = results?.forecast
                     val layoutForecast: LinearLayout = linearLayout_forecasts
                     val forecastHoje = forecast?.get(0)
-                    textView_temperatura.text = "${results?.temp}º"
-                    textView_cidade.text = results?.cityName
-                    textView_descricao.text = results?.description
-                    textView_data.text = forecastHoje?.weekday
-                    textView_maxima.text = "${forecastHoje?.max.toString()}º"
-                    textView_minima.text = "${forecastHoje?.min.toString()}º"
-                    textView_umidade.text = "${results?.humidity.toString()}%"
-                    textview_velocidadevento.text = results?.windSpeedy
-                    println(forecast?.size)
+
+                    if (results != null && forecastHoje != null) preencheResultadoNaTela(results, forecastHoje)
+
                     val tempoAtual = results?.currently
-                    imageView.setImageResource( alteraImagemConformeTempoAtual(tempoAtual.toString(), textView_descricao.text.toString()) )
+                    val codCondicao = results?.conditionCode
+                    if (tempoAtual != null && codCondicao != null) imageView.setImageResource( alteraImagemConformeTempoAtual(codCondicao, tempoAtual) )
 
                     val inflater: LayoutInflater = LayoutInflater.from(this@MainActivity)
                     if (forecast != null) {
-                        for (index in forecast) {
+                        for (index in forecast.take(4)) {
                             val view: View = inflater.inflate(R.layout.layout_forecast, layoutForecast, false)
                             view.textView_dia_semana.text = index.weekday
-                            val minima = index.min
-                            val maxima = index.max
-                            var temperaturaMedia: Int = index.calculaTemperaturaMedia(minima, maxima)
+                            var temperaturaMedia: Int = index.calculaTemperaturaMedia(index.min, index.max)
                             view.textView_temperatura_media.text = "${temperaturaMedia.toString()}º"
                             layoutForecast.addView(view)
                         }
@@ -87,18 +82,38 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun alteraImagemConformeTempoAtual(tempoAtual: String, tempoDescricao: String): Int {
-        var idDrawable: Int = 0
-        if(tempoAtual == "dia" && tempoDescricao.contains("nublado")) {
-            idDrawable = R.drawable.dia_nublado
-        } else if (tempoAtual == "noite" && !tempoDescricao.contains("nublado") && !tempoDescricao.contains("Neblina")) {
-            idDrawable = R.drawable.noite
-        } else if (tempoAtual == "noite" && tempoDescricao == "Neblina") {
-            idDrawable = R.drawable.noite_nublada
-        } else if (tempoAtual == "noite" && tempoDescricao.contains("nublado")) {
-            idDrawable = R.drawable.noite_nublada
+    fun alteraImagemConformeTempoAtual(codCondicao: String, tempoAtual: String): Int {
+
+        return if (tempoAtual == "dia") {
+            when (codCondicao) {
+                "32", "33", "34", "27", "31", "35", "40", "45" -> R.drawable.sol
+                "25", "26", "28", "29", "30" -> R.drawable.dia_nublado
+                "9", "11", "12" -> R.drawable.dia_nublado_com_chuva
+                else -> R.drawable.sol
+            }
+        } else {
+            when (codCondicao) {
+                "26", "28", "29", "30" -> R.drawable.noite_nublada
+                "33", "27", "31" -> R.drawable.noite
+                else -> R.drawable.noite
+            }
         }
-        return idDrawable
+
+    }
+
+    fun preencheResultadoNaTela(result: Results, forecastHoje: Forecast) {
+        textView_temperatura.text = "${result.temp}º"
+        textView_cidade.text = result.cityName
+        textView_descricao.text = result.description
+        textView_data.text = forecastHoje.weekday
+        textView_maxima.text = "${forecastHoje.max.toString()}º"
+        textView_minima.text = "${forecastHoje.min.toString()}º"
+        textView_umidade.text = "${result.humidity.toString()}%"
+        textview_velocidadevento.text = result.windSpeedy
+    }
+
+    fun buscarCidade(view: View) {
+        Toast.makeText(this, "Clicou no botão de pesquisar", Toast.LENGTH_SHORT).show()
     }
 
 }

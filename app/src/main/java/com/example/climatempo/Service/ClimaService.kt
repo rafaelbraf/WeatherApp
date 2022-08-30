@@ -12,7 +12,7 @@ interface ClimaService {
         const val BASE_URL = "https://api.hgbrasil.com/"
     }
 
-    @GET("weather?key={YOUR_KEY}&")
+    @GET("weather?key={YOUR_KEY}")
     fun getClima(@Query("city_name") cidade: String): Call<WeatherMain>
 
 }
