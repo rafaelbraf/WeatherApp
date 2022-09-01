@@ -1,4 +1,3 @@
 <resources>
     <string name="app_name">ClimaTempo</string>
-    <string name="hint_text">Ex.: Cidade, ES</string>
 </resources>
