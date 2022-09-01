@@ -13,7 +13,7 @@ interface ClimaService {
     }
 
     //https://api.hgbrasil.com/weather?key=5caee7bd&city_name=$cidade
-    @GET("weather?key=5caee7bd&")
+    @GET("weather?key={YOUR_KEY}&")
     fun getClima(@Query("city_name") cidade: String): Call<WeatherMain>
 
 }
