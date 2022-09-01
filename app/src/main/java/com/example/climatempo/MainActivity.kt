@@ -1,12 +1,13 @@
 package com.example.climatempo
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.Window
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.annotation.DrawableRes
 import com.example.climatempo.Model.Forecast
 import com.example.climatempo.Model.Results
@@ -25,9 +26,21 @@ import java.util.zip.Inflater
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.activity_main)
 
-        buscaCidade("Fortaleza,CE")
+        val activAcionada = intent.getStringExtra("activity")
+        val cidadePesquisada = intent.getStringExtra("cidade_pesquisada")
+
+        println("$activAcionada - $cidadePesquisada")
+
+        if (activAcionada == "activity_search" && cidadePesquisada != null && cidadePesquisada != "") buscaCidade(cidadePesquisada)
+        else buscaCidade("Fortaleza,CE")
+
+        imageButton_search.setOnClickListener {
+            val intent = Intent(this, SearchActivity::class.java)
+            startActivity(intent)
+        }
 
     }
 
@@ -48,26 +61,22 @@ class MainActivity : AppCompatActivity() {
                 response: retrofit2.Response<WeatherMain>
             ) {
                 if (response.isSuccessful) {
-
                     val resultadoWeatherMain: WeatherMain? = response.body()
                     val results: Results? = resultadoWeatherMain?.results
                     val forecast: ArrayList<Forecast>? = results?.forecast
                     val layoutForecast: LinearLayout = linearLayout_forecasts
-                    val forecastHoje = forecast?.get(0)
 
-                    if (results != null && forecastHoje != null) preencheResultadoNaTela(results, forecastHoje)
+                    if (results != null && forecast != null) preencheResultadoNaTela(results, forecast[0])
 
                     val tempoAtual = results?.currently
-                    val codCondicao = results?.conditionCode
-                    if (tempoAtual != null && codCondicao != null) imageView.setImageResource( alteraImagemConformeTempoAtual(codCondicao, tempoAtual) )
+                    imageView.setImageResource( alteraImagemConformeTempoAtual(tempoAtual.toString(), textView_descricao.text.toString()) )
 
                     val inflater: LayoutInflater = LayoutInflater.from(this@MainActivity)
                     if (forecast != null) {
-                        for (index in forecast.take(4)) {
+                        for (index in forecast) {
                             val view: View = inflater.inflate(R.layout.layout_forecast, layoutForecast, false)
                             view.textView_dia_semana.text = index.weekday
-                            var temperaturaMedia: Int = index.calculaTemperaturaMedia(index.min, index.max)
-                            view.textView_temperatura_media.text = "${temperaturaMedia.toString()}º"
+                            view.textView_temperatura_media.text = "${index.calculaTemperaturaMedia(index.min, index.max).toString()}º"
                             layoutForecast.addView(view)
                         }
                     }
@@ -82,38 +91,29 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun alteraImagemConformeTempoAtual(codCondicao: String, tempoAtual: String): Int {
-
-        return if (tempoAtual == "dia") {
-            when (codCondicao) {
-                "32", "33", "34", "27", "31", "35", "40", "45" -> R.drawable.sol
-                "25", "26", "28", "29", "30" -> R.drawable.dia_nublado
-                "9", "11", "12" -> R.drawable.dia_nublado_com_chuva
-                else -> R.drawable.sol
-            }
-        } else {
-            when (codCondicao) {
-                "26", "28", "29", "30" -> R.drawable.noite_nublada
-                "33", "27", "31" -> R.drawable.noite
-                else -> R.drawable.noite
-            }
+    fun alteraImagemConformeTempoAtual(tempoAtual: String, tempoDescricao: String): Int {
+        var idDrawable: Int = 0
+        if(tempoAtual == "dia" && tempoDescricao.contains("nublado")) {
+            idDrawable = R.drawable.dia_nublado
+        } else if (tempoAtual == "noite" && !tempoDescricao.contains("nublado") && !tempoDescricao.contains("Neblina")) {
+            idDrawable = R.drawable.noite
+        } else if (tempoAtual == "noite" && tempoDescricao == "Neblina") {
+            idDrawable = R.drawable.noite_nublada
+        } else if (tempoAtual == "noite" && tempoDescricao.contains("nublado")) {
+            idDrawable = R.drawable.noite_nublada
         }
-
+        return idDrawable
     }
 
-    fun preencheResultadoNaTela(result: Results, forecastHoje: Forecast) {
-        textView_temperatura.text = "${result.temp}º"
-        textView_cidade.text = result.cityName
-        textView_descricao.text = result.description
-        textView_data.text = forecastHoje.weekday
-        textView_maxima.text = "${forecastHoje.max.toString()}º"
-        textView_minima.text = "${forecastHoje.min.toString()}º"
-        textView_umidade.text = "${result.humidity.toString()}%"
-        textview_velocidadevento.text = result.windSpeedy
-    }
-
-    fun buscarCidade(view: View) {
-        Toast.makeText(this, "Clicou no botão de pesquisar", Toast.LENGTH_SHORT).show()
+    fun preencheResultadoNaTela(results: Results, forecast: Forecast) {
+        textView_temperatura.text = "${results.temp}º"
+        textView_cidade.text = results.cityName
+        textView_descricao.text = results.description
+        textView_data.text = forecast.weekday
+        textView_maxima.text = "${forecast.max.toString()}º"
+        textView_minima.text = "${forecast.min.toString()}º"
+        textView_umidade.text = "${results.humidity.toString()}%"
+        textview_velocidadevento.text = results?.windSpeedy
     }
 
 }
