@@ -1,10 +1,12 @@
 package com.example.climatempo
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.Window
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.annotation.DrawableRes
@@ -25,9 +27,19 @@ import java.util.zip.Inflater
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.activity_main)
 
-        buscaCidade("Fortaleza,CE")
+        val activAcionada = intent.getStringExtra("activity")
+        val cidadePesquisada = intent.getStringExtra("cidadePesquisada")
+
+        if (activAcionada == "activity_search" && cidadePesquisada != null) buscaCidade(cidadePesquisada)
+        else buscaCidade("Fortaleza,CE")
+
+        imageButton_search.setOnClickListener {
+            val intent = Intent(this, SearchActivity::class.java)
+            startActivity(intent)
+        }
 
     }
 
@@ -43,12 +55,9 @@ class MainActivity : AppCompatActivity() {
         val call: retrofit2.Call<WeatherMain> = service.getClima(cidade)
 
         call.enqueue(object: retrofit2.Callback<WeatherMain> {
-            override fun onResponse(
-                call: retrofit2.Call<WeatherMain>,
-                response: retrofit2.Response<WeatherMain>
-            ) {
-                if (response.isSuccessful) {
+            override fun onResponse( call: retrofit2.Call<WeatherMain>, response: retrofit2.Response<WeatherMain> ) {
 
+                if (response.isSuccessful) {
                     val resultadoWeatherMain: WeatherMain? = response.body()
                     val results: Results? = resultadoWeatherMain?.results
                     val forecast: ArrayList<Forecast>? = results?.forecast
@@ -71,8 +80,8 @@ class MainActivity : AppCompatActivity() {
                             layoutForecast.addView(view)
                         }
                     }
-
                 }
+
             }
 
             override fun onFailure(call: retrofit2.Call<WeatherMain>, t: Throwable) {
@@ -110,10 +119,6 @@ class MainActivity : AppCompatActivity() {
         textView_minima.text = "${forecastHoje.min.toString()}º"
         textView_umidade.text = "${result.humidity.toString()}%"
         textview_velocidadevento.text = result.windSpeedy
-    }
-
-    fun buscarCidade(view: View) {
-        Toast.makeText(this, "Clicou no botão de pesquisar", Toast.LENGTH_SHORT).show()
     }
 
 }
